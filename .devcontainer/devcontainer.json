@@ -1,0 +1,29 @@
+{
+  "name": "Python 3.12 Devcontainer",
+  // Tells VS Code to build from the Dockerfile in the same folder
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  // Add these two properties for SSH agent forwarding
+  "mounts": [
+    "source=/home/markus/.ssh/agent.sock,target=/tmp/ssh-agent.sock,type=bind"
+  ],
+  "containerEnv": {
+    "SSH_AUTH_SOCK": "/tmp/ssh-agent.sock"
+  },
+  // VS Code specific settings and extensions
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Points VS Code to the python interpreter inside the container
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      },
+      // Essential extensions to install inside the container
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}
