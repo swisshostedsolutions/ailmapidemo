@@ -7,7 +7,11 @@
   },
   // Add these two properties for SSH agent forwarding
   "mounts": [
-    "source=/home/markus/.ssh/agent.sock,target=/tmp/ssh-agent.sock,type=bind"
+    "source=/home/markus/.ssh/agent.sock,target=/tmp/ssh-agent.sock,type=bind",
+    // Add this line to mount your .ssh folder
+    "source=/home/markus/.ssh/config,target=/home/vscode/.ssh/config,type=bind,consistency=cached",
+    // 3. Mount the known_hosts file to avoid host key errors
+    "source=/home/markus/.ssh/known_hosts,target=/home/vscode/.ssh/known_hosts,type=bind,consistency=cached"
   ],
   "containerEnv": {
     "SSH_AUTH_SOCK": "/tmp/ssh-agent.sock"
