@@ -22,7 +22,9 @@
       // Essential extensions to install inside the container
       "extensions": [
         "ms-python.python",
-        "ms-python.vscode-pylance"
+        "ms-python.vscode-pylance",
+        "github.remotehub",
+        "github.vscode-pull-request-github"
       ]
     }
   }
