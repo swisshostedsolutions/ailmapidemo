@@ -1,2 +1,4 @@
 .env
 /temp
+/local_model/
+__pycache__

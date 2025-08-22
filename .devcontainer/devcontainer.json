@@ -1,19 +1,10 @@
 {
-  "name": "Python 3.12 Devcontainer",
-  // Tells VS Code to build from the Dockerfile in the same folder
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
-  // Hinzufügen des "features"-Blocks für den SSH-Agent
-  // "features": {
-  //   "ghcr.io/devcontainers/features/ssh-agent:1": {}
-  // },
-  // VS Code specific settings and extensions
+"name": "Pyhton baseline Devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "postCreateCommand": "pip install -r requirements.txt",
   "customizations": {
     "vscode": {
       "settings": {
-        // Points VS Code to the python interpreter inside the container
         "python.defaultInterpreterPath": "/usr/local/bin/python"
       },
       // Essential extensions to install inside the container
@@ -24,5 +15,8 @@
         "github.vscode-pull-request-github"
       ]
     }
+    
   }
+  
 }
+
