@@ -1,22 +1,31 @@
 {
-"name": "Pyhton baseline Devcontainer",
-  "image": "mcr.microsoft.com/devcontainers/python:3.11",
-  "postCreateCommand": "pip install -r requirements.txt",
-  "customizations": {
-    "vscode": {
-      "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python"
-      },
-      // Essential extensions to install inside the container
-      "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "github.remotehub",
-        "github.vscode-pull-request-github"
-      ]
-    }
-    
-  }
-  
-}
+    "name": "Pyhton baseline Devcontainer",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    // ---- BEGINN: Explizites SSH-Forwarding ----
+    "mounts": [
+        "source=${localEnv:SSH_AUTH_SOCK},target=/vscode/ssh-auth-sock,type=bind,consistency=cached"
+    ],
+    "runArgs": [
+        "--env",
+        "SSH_AUTH_SOCK=/vscode/ssh-auth-sock"
+    ],
+    // ---- ENDE: Explizites SSH-Forwarding ----
 
+    "postCreateCommand": "pip install -r requirements.txt",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "github.remotehub",
+                "github.vscode-pull-request-github"
+            ]
+        }
+    }
+}
