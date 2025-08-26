@@ -1,4 +1,4 @@
 .env
 /temp
-/local_model/
+backend/local_model/
 __pycache__

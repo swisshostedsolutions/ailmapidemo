@@ -62,5 +62,3 @@ message_zeroshot = classifier_zeroshot(
     candidate_labels=["education", "politics", "economy"],
 )
 print(message_zeroshot)
-
-pipeline()
