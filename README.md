@@ -1,5 +1,5 @@
 Dynamic Hugging Face Pipeline API 🚀
-This project is a FastAPI-based backend that provides a dynamic, self-documenting API for running various Hugging Face transformers pipelines. It's designed to be a robust foundation for building custom AI-powered applications.
+This project is a FastAPI-based backend that provides a dynamic, self-documenting API for running various text-based Hugging Face transformers pipelines. It's designed to be a robust foundation for building custom AI-powered applications.
 
 The key feature of this backend is its ability to programmatically discover supported tasks and their required input parameters, making it highly flexible and adaptable to the evolving transformers library.
 

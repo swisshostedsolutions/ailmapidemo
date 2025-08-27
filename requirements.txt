@@ -6,8 +6,6 @@ torch
 fastapi[all]
 sentencepiece
 protobuf
-timm
-Pillow
 pandas
 pytest
 pytest-asyncio
