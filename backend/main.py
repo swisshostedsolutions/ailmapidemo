@@ -5,9 +5,9 @@ from typing import Dict, Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from transformers import pipeline
-from utils.hf_model_localizer import get_local_model
+from .utils.hf_model_localizer import get_local_model
 # from utils.hf_get_pipeline_models import get_supported_models
-from utils.hf_task_analyzer import get_full_task_details
+from .utils.hf_task_analyzer import get_full_task_details
 
 
 class PipelineRequest(BaseModel):

@@ -1,6 +1,8 @@
 import os
-from transformers import AutoModel, AutoTokenizer
-def get_local_model(model_name, task_name, base_save_path="./local_model"):
+from transformers import SUPPORTED_TASKS, AutoTokenizer
+
+
+def get_local_model(model_name, task_name, base_save_path=DEFAULT_SAVE_PATH):
     """
     Lädt ein Hugging Face Modell und Tokenizer.
 
@@ -9,37 +11,55 @@ def get_local_model(model_name, task_name, base_save_path="./local_model"):
     Ansonsten wird es vom lokalen Pfad geladen.
 
     Args:
-        model_name (str): Der Name des Modells auf dem Hugging Face Hub 
+        model_name (str): Der Name des Modells auf dem Hugging Face Hub
                           (z.B. "distilbert-base-uncased-finetuned-sst-2-english").
         task_name (str): Ein kurzer Name für den Task, wird als Ordnername verwendet
                          (z.B. "sentiment-analysis").
-        base_save_path (str, optional): Das Hauptverzeichnis, in dem die Modelle 
+        base_save_path (str, optional): Das Hauptverzeichnis, in dem die Modelle
                                         gespeichert werden. Standard ist "./local_model".
 
     Returns:
         tuple: Ein Tupel mit dem geladenen Modell und Tokenizer.
     """
-    save_path = os.path.join(base_save_path, task_name)
-    
+
+    # --- NEW: Build a robust, absolute path to the model directory ---
+    # This gets the directory of the current file (utils/)
+    UTILS_DIR = os.path.dirname(__file__)
+    # This goes one level up to get the backend/ directory
+    BACKEND_DIR = os.path.abspath(os.path.join(UTILS_DIR, '..'))
+    # This creates the final, correct path: .../backend/local_model
+    DEFAULT_SAVE_PATH = os.path.join(BACKEND_DIR, 'local_model')
+
     print("\n" + "--- Loading model for task: " + task_name + "---")
-    
+
+    try:
+        # --- KEY CHANGE: Look up the correct AutoModel class for the task ---
+        model_class = SUPPORTED_TASKS[task_name]["pt"][0]
+    except KeyError:
+        raise ValueError(
+            f"Task '{task_name}' or its required model class is not supported.")
+
     if not os.path.exists(save_path):
-        print(f"Local model not found. Downloading '{model_name}' from Hugging Face Hub...")
-        model = AutoModel.from_pretrained(model_name)
+        print(
+            f"Local model not found. Downloading '{model_name}' from Hugging Face Hub...")
+
+        # Use the specific model_class we found to load the model
+        model = model_class.from_pretrained(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        
+
         # Erstellt die Ordner, falls sie nicht existieren
         os.makedirs(save_path, exist_ok=True)
-        
+
         model.save_pretrained(save_path)
         tokenizer.save_pretrained(save_path)
         print(f"Model saved to '{save_path}'.")
     else:
         print(f"Loading model from local path: '{save_path}'...")
-        model = AutoModel.from_pretrained(save_path)
-        tokenizer = AutoTokenizer.from_pretrained(save_path)
+
+        model = model_class.from_pretrained(full_save_path)
+        tokenizer = AutoTokenizer.from_pretrained(full_save_path)
         print("Model loaded successfully.")
-    
+
     return model, tokenizer
 
 # Saving the huggingface pipeline model for sentiment
@@ -47,7 +67,7 @@ def get_local_model(model_name, task_name, base_save_path="./local_model"):
 
 # def local_load_hf_sentiment(save_path = "./local_model/sentiment"):
 
-    
+
 #     if not os.path.exists(save_path):
 #         model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
 #         tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
@@ -58,12 +78,12 @@ def get_local_model(model_name, task_name, base_save_path="./local_model"):
 #         model = AutoModelForSequenceClassification.from_pretrained(save_path)
 #         tokenizer = AutoTokenizer.from_pretrained(save_path)
 #         print("Load model locally.")
-    
+
 #     return model, tokenizer
 
 # def local_load_hf_zeroshotclassification(save_path = "./local_model/zeroshotclassification"):
 
-    
+
 #     if not os.path.exists(save_path):
 #         model = AutoModelForSequenceClassification.from_pretrained("facebook/bart-large-mnli")
 #         tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-mnli")
@@ -74,5 +94,5 @@ def get_local_model(model_name, task_name, base_save_path="./local_model"):
 #         model = AutoModelForSequenceClassification.from_pretrained(save_path)
 #         tokenizer = AutoTokenizer.from_pretrained(save_path)
 #         print("Load model locally.")
-    
+
 #     return model, tokenizer

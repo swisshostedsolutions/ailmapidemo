@@ -9,3 +9,6 @@ protobuf
 timm
 Pillow
 pandas
+pytest
+pytest-asyncio
+httpx
