@@ -2,3 +2,4 @@
 /temp
 backend/local_model/
 __pycache__
+.pytest_cache

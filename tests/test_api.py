@@ -32,11 +32,9 @@ async def test_get_tasks_endpoint():
         ),
         (
             "question-answering",
-            {
-                "example": {
-                    "question": "What is the capital of Switzerland?",
-                    "context": "The capital of Switzerland is Bern."
-                }
+            {                
+                "question": "What is the capital of Switzerland?",
+                "context": "The capital of Switzerland is Bern."
             }
         )
     ]
