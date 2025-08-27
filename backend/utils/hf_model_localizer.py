@@ -1,6 +1,5 @@
 import os
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
+from transformers import AutoModel, AutoTokenizer
 def get_local_model(model_name, task_name, base_save_path="./local_model"):
     """
     Lädt ein Hugging Face Modell und Tokenizer.
@@ -26,7 +25,7 @@ def get_local_model(model_name, task_name, base_save_path="./local_model"):
     
     if not os.path.exists(save_path):
         print(f"Local model not found. Downloading '{model_name}' from Hugging Face Hub...")
-        model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        model = AutoModel.from_pretrained(model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         
         # Erstellt die Ordner, falls sie nicht existieren
@@ -37,7 +36,7 @@ def get_local_model(model_name, task_name, base_save_path="./local_model"):
         print(f"Model saved to '{save_path}'.")
     else:
         print(f"Loading model from local path: '{save_path}'...")
-        model = AutoModelForSequenceClassification.from_pretrained(save_path)
+        model = AutoModel.from_pretrained(save_path)
         tokenizer = AutoTokenizer.from_pretrained(save_path)
         print("Model loaded successfully.")
     

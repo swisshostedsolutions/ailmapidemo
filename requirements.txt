@@ -4,3 +4,8 @@ python-dotenv
 pylance
 torch
 fastapi[all]
+sentencepiece
+protobuf
+timm
+Pillow
+pandas
