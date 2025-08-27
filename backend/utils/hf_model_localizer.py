@@ -1,49 +1,50 @@
+
 # in backend/utils/hf_model_localizer.py
 import os
-from transformers import AutoTokenizer
-# Correctly import SUPPORTED_TASKS from the 'pipelines' submodule
+# We now import AutoProcessor, our all-in-one tool
+from transformers import AutoProcessor
 from transformers.pipelines import SUPPORTED_TASKS
 
-# --- Build a robust, absolute path to the model directory ---
-# This logic should be at the module level (outside the function).
+# The path logic remains the same
 UTILS_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(UTILS_DIR, '..')
 DEFAULT_SAVE_PATH = os.path.join(BACKEND_DIR, 'local_model')
 
 
-def get_local_model(model_name, task_name, base_save_path=DEFAULT_SAVE_PATH):
+def get_local_model_and_processor(model_name, task_name, base_save_path=DEFAULT_SAVE_PATH):
     """
-    Loads a Hugging Face model and tokenizer with the correct
-    architecture for the given task.
+    Loads a Hugging Face model and its appropriate processor (tokenizer,
+    image processor, feature extractor, or a combination) for the given task.
     """
     full_save_path = os.path.join(base_save_path, task_name)
     
-    print(f"\n--- Loading model for task: {task_name}---")
+    print(f"\n--- Loading components for task: {task_name}---")
     
     try:
-        # Look up the correct AutoModel class for the task
         model_class = SUPPORTED_TASKS[task_name]["pt"][0]
     except KeyError:
         raise ValueError(f"Task '{task_name}' or its required model class is not supported.")
 
     if not os.path.exists(full_save_path):
-        print(f"Local model not found. Downloading '{model_name}' from Hugging Face Hub...")
+        print(f"Local components not found. Downloading '{model_name}' from Hugging Face Hub...")
         
-        # Use the specific model_class we found to load the model
+        # Load the specific model class and the generic processor
         model = model_class.from_pretrained(model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        processor = AutoProcessor.from_pretrained(model_name)
         
         os.makedirs(full_save_path, exist_ok=True)
         
+        # Save both the model and the processor
         model.save_pretrained(full_save_path)
-        tokenizer.save_pretrained(full_save_path)
-        print(f"Model saved to '{full_save_path}'.")
+        processor.save_pretrained(full_save_path)
+        print(f"Components saved to '{full_save_path}'.")
     else:
-        print(f"Loading model from local path: '{full_save_path}'...")
+        print(f"Loading components from local path: '{full_save_path}'...")
         
-        # Also use the specific model_class here for loading from a local path
+        # Load both from the local path
         model = model_class.from_pretrained(full_save_path)
-        tokenizer = AutoTokenizer.from_pretrained(full_save_path)
-        print("Model loaded successfully.")
+        processor = AutoProcessor.from_pretrained(full_save_path)
+        print("Components loaded successfully.")
     
-    return model, tokenizer
+    # The function now returns a processor instead of just a tokenizer
+    return model, processor

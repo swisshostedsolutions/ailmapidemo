@@ -36,6 +36,21 @@ async def test_get_tasks_endpoint():
                 "question": "What is the capital of Switzerland?",
                 "context": "The capital of Switzerland is Bern."
             }
+        ),
+        # --- NEW Multimodal Test Examples ---
+        (
+            "document-question-answering",
+            {
+                "image": "test_assets/sample.jpg", # Use 'image'
+                "question": "What is the invoice number?"
+            }
+        ),
+        (
+            "visual-question-answering",
+            {
+                "image": "test_assets/sample.jpg", # Use 'image'
+                "question": "What is in this image?"
+            }
         )
     ]
 )

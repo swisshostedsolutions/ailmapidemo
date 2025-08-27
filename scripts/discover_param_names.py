@@ -1,120 +1,94 @@
 # in scripts/discover_param_names.py
 import inspect
 import re
+import json
 from transformers import pipeline
 from transformers.pipelines import SUPPORTED_TASKS
-# --- NEW IMPORTS ---
-# Import our own model localizer
-from backend.utils.hf_model_localizer import get_local_model
-# We no longer need these for dummy data, but the pipeline might need them to load the assets
-from PIL import Image
-import numpy as np
+from backend.utils.hf_model_localizer import get_local_model_and_processor
+import pandas as pd
 
-
-# The file paths and dummy data factory remain the same
+# Test asset paths
 IMAGE_PATH = "test_assets/sample.jpg"
 AUDIO_PATH = "test_assets/sample.wav"
 VIDEO_PATH = "test_assets/sample.mp4"
 
+def create_dummy_data(task_name, parameters):
+    """Creates a dictionary of plausible dummy data based on the task and parameter names."""
+    if task_name == "question-answering":
+        return {"question": "Who?", "context": "He did it."}
+    if task_name == "table-question-answering":
+        table = pd.DataFrame.from_dict({"actors": ["brad pitt"], "movies": ["once upon a time in hollywood"]})
+        return {"query": "how many movies?", "table": table}
+    if task_name == "fill-mask":
+        return {"inputs": "The capital of France is <mask>."}
 
-def create_dummy_data(parameters):
-   
     dummy_data = {}
     for param in parameters:
         name = param["name"]
-        if "image" in name:
-            dummy_data[name] = IMAGE_PATH
-        elif "video" in name:
-            dummy_data[name] = VIDEO_PATH
-        elif "audio" in name:
-            dummy_data[name] = AUDIO_PATH
-        elif "inputs" in name:
-            if "fill-mask" in parameters[0].get("type", ""):
-                dummy_data[name] = "Hello, I'm a <mask> model."
-            else:
-                dummy_data[name] = "This is a test sentence."
-        elif "candidate_labels" in name:
-            dummy_data[name] = ["first label", "second label"]
-        elif "example" in name:
-            dummy_data[name] = {"question": "Who?", "context": "He did it."}
-        elif name == 'sequences':
-            dummy_data[name] = "This is a test sentence."
+        if "image" in name: dummy_data[name] = IMAGE_PATH
+        elif "video" in name: dummy_data[name] = VIDEO_PATH
+        elif "audio" in name: dummy_data[name] = AUDIO_PATH
+        elif "candidate_labels" in name: dummy_data[name] = ["first", "second"]
+        else: dummy_data.setdefault(name, "This is a test sentence.")
     return dummy_data
 
+def create_pipeline_components(model, processor):
+    """Inspects the processor and builds the correct component dictionary for the pipeline."""
+    components = {"model": model}
+    if hasattr(processor, 'tokenizer'): components['tokenizer'] = processor
+    if hasattr(processor, 'image_processor'): components['image_processor'] = processor
+    if hasattr(processor, 'feature_extractor'): components['feature_extractor'] = processor
+    if len(components) == 1: components['tokenizer'] = processor
+    return components
 
 def discover_inconsistencies():
-    print("Starting discovery and pre-caching of all models...")
-    print("This will take a long time and download many models to backend/local_model/.\n")
-
+    print("Starting final discovery and pre-caching for ALL pipelines...")
     final_parameter_map = {}
-
-    base_tasks = {}
-    for task, details in SUPPORTED_TASKS.items():
-        if "impl" in details and "default" in details and "model" in details["default"]:
-            base_tasks[task] = details
+    base_tasks = {
+        task: details for task, details in SUPPORTED_TASKS.items()
+        if "impl" in details and "default" in details and "model" in details["default"]
+    }
 
     for task_name, details in base_tasks.items():
         print(f"--- Analyzing and Caching task: {task_name} ---")
         try:
-            # --- KEY CHANGES START HERE ---
+            model_name = details["default"]["model"]["pt"][0]
+            model, processor = get_local_model_and_processor(model_name=model_name, task_name=task_name)
+            
+            pipeline_components = create_pipeline_components(model, processor)
+            classifier = pipeline(task_name, **pipeline_components)
 
-            # 1. Introspect to get our "best guess" for parameter names
             pipeline_class = details["impl"]
             signature = inspect.signature(pipeline_class.preprocess)
+            introspected_params = [
+                {"name": param.name}
+                for param in signature.parameters.values()
+                if param.name not in ["self", "args", "kwargs"] and param.default is inspect.Parameter.empty
+            ]
+            dummy_input = create_dummy_data(task_name, introspected_params)
 
-            introspected_params = []
-            for param in signature.parameters.values():
-                if param.name in ["self", "args", "kwargs"] or param.default is not inspect.Parameter.empty:
-                    continue
-                introspected_params.append({"name": param.name})
-
-            # 2. Create dummy input data based on our guess
-            dummy_input = create_dummy_data(introspected_params)
-
-            # 1. Get the default model name
-            model_name = details["default"]["model"]["pt"][0]
-
-            # 3. Pre-cache the model using our utility
-            model, tokenizer = get_local_model(
-                model_name=model_name,
-                task_name=task_name,
-                base_save_path="backend/local_model"
-            )
-
-            # 4. Try to run the pipeline with the dummy data
-            classifier = pipeline(task_name, model=model, tokenizer=tokenizer)
             classifier(**dummy_input)
-            print(f"✅ '{task_name}' parameters seem consistent. Models cached locally.")
+            print(f"✅ '{task_name}' parameters seem consistent.")
 
         except TypeError as e:
-            # 5. If it fails with a TypeError, we've found an inconsistency!
             error_str = str(e)
-            match = re.search(
-                r"missing \d+ required positional argument[s]*: '(\w+)'", error_str)
-            if match:
-                # Extract the REAL name from the error message
+            match = re.search(r"missing \d+ required positional argument[s]*: '(\w+)'", error_str)
+            if match and introspected_params:
                 real_name = match.group(1)
-                if introspected_params:
-                    introspected_name = introspected_params[0]["name"]
-                    if introspected_name != real_name:
-                        print(
-                            f"❗️ Found inconsistency for '{task_name}': Introspection found '{introspected_name}', but runtime needs '{real_name}'.")
-                        if task_name not in final_parameter_map:
-                            final_parameter_map[task_name] = {}
-                        final_parameter_map[task_name][introspected_name] = real_name
+                introspected_name = introspected_params[0]["name"]
+                if introspected_name != real_name:
+                    print(f"❗️ Found inconsistency for '{task_name}': Introspection found '{introspected_name}', but runtime needs '{real_name}'.")
+                    if task_name not in final_parameter_map:
+                        final_parameter_map[task_name] = {}
+                    final_parameter_map[task_name][introspected_name] = real_name
             else:
                 print(f"⚠️  Could not parse TypeError for '{task_name}': {e}")
         except Exception as e:
-            print(
-                f"❌ Failed to initialize or run pipeline for '{task_name}': {e}")
-
+            print(f"❌ Failed to initialize or run pipeline for '{task_name}': {e}")
+        
     print("\n\n--- Discovery Complete! ---")
     print("Copy the following dictionary into `backend/utils/task_analyzer.py`:\n")
-    print("PARAMETER_NAME_MAP = {")
-    for task, overrides in final_parameter_map.items():
-        print(f'    "{task}": {overrides},')
-    print("}")
-
+    print(f"PARAMETER_NAME_MAP = {json.dumps(final_parameter_map, indent=4)}")
 
 if __name__ == "__main__":
     discover_inconsistencies()

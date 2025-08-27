@@ -3,13 +3,18 @@ from transformers.pipelines import SUPPORTED_TASKS
 
 # Map for known parameter name inconsistencies 
 # from /scripts/discover_param_names.py
+
 PARAMETER_NAME_MAP = {
     "text-to-audio": {'text': 'text_inputs'},
     "token-classification": {'sentence': 'inputs'},
+    "visual-question-answering": {'inputs': 'image'},
     "document-question-answering": {'input': 'image'},
+    "text-generation": {'prompt_text': 'text_inputs'},
     "zero-shot-classification": {'inputs': 'sequences'},
+    "zero-shot-image-classification": {'image': 'candidate_labels'},
+    "zero-shot-audio-classification": {'audio': 'audios'},
+    "zero-shot-object-detection": {'inputs': 'image'},
 }
-
 
 def get_full_task_details():
     """

@@ -1,7 +1,11 @@
 # Wir starten vom selben Python-Basis-Image, das Sie bereits verwenden.
 FROM mcr.microsoft.com/devcontainers/python:3.11
 
-# --- TORCH UND REQUIREMENTS INSTALLATION ---
+# NEU: Tesseract OCR Engine installieren
+# apt-get update aktualisiert die Paketlisten, install -y installiert tesseract
+# und der letzte Befehl räumt den Cache auf, um das Image klein zu halten.
+RUN apt-get update && apt-get install -y tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
 
 # Erstellen Sie einen Arbeitsordner im Image.
 WORKDIR /app

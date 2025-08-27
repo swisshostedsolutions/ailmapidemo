@@ -12,3 +12,4 @@ pandas
 pytest
 pytest-asyncio
 httpx
+pytesseract
