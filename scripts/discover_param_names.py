@@ -18,7 +18,7 @@ VIDEO_PATH = "test_assets/sample.mp4"
 
 
 def create_dummy_data(parameters):
-    # ... (this function does not need to be changed)
+   
     dummy_data = {}
     for param in parameters:
         name = param["name"]
@@ -58,22 +58,7 @@ def discover_inconsistencies():
         try:
             # --- KEY CHANGES START HERE ---
 
-            # 1. Get the default model name
-            model_name = details["default"]["model"]["pt"][0]
-
-            # 2. Use our own function to download the model to the correct location
-            #    We specify the path relative to the project root where we run the script.
-            model, tokenizer = get_local_model(
-                model_name=model_name,
-                task_name=task_name,
-                base_save_path="backend/local_model"
-            )
-
-            # 3. Initialize the pipeline using the pre-loaded model
-            classifier = pipeline(task_name, model=model, tokenizer=tokenizer)
-
-            # --- KEY CHANGES END HERE ---
-
+            # 1. Introspect to get our "best guess" for parameter names
             pipeline_class = details["impl"]
             signature = inspect.signature(pipeline_class.preprocess)
 
@@ -83,18 +68,31 @@ def discover_inconsistencies():
                     continue
                 introspected_params.append({"name": param.name})
 
+            # 2. Create dummy input data based on our guess
             dummy_input = create_dummy_data(introspected_params)
 
-            # Try to call the pipeline
+            # 1. Get the default model name
+            model_name = details["default"]["model"]["pt"][0]
+
+            # 3. Pre-cache the model using our utility
+            model, tokenizer = get_local_model(
+                model_name=model_name,
+                task_name=task_name,
+                base_save_path="backend/local_model"
+            )
+
+            # 4. Try to run the pipeline with the dummy data
+            classifier = pipeline(task_name, model=model, tokenizer=tokenizer)
             classifier(**dummy_input)
-            print(f"✅ '{task_name}' OK. Model cached in backend/local_model/.")
+            print(f"✅ '{task_name}' parameters seem consistent. Models cached locally.")
 
         except TypeError as e:
-            # ... (error handling for inconsistency detection remains the same)
+            # 5. If it fails with a TypeError, we've found an inconsistency!
             error_str = str(e)
             match = re.search(
                 r"missing \d+ required positional argument[s]*: '(\w+)'", error_str)
             if match:
+                # Extract the REAL name from the error message
                 real_name = match.group(1)
                 if introspected_params:
                     introspected_name = introspected_params[0]["name"]

@@ -34,6 +34,7 @@ def get_full_task_details():
         try:
             # Get the pipeline class for the task
             pipeline_class = SUPPORTED_TASKS[task_name]["impl"]
+            # 4. Use 'inspect' to get the signature of the preprocess method
             signature = inspect.signature(pipeline_class.preprocess)
 
             parameters = []
@@ -42,17 +43,17 @@ def get_full_task_details():
                 if param.name in ["self", "args", "kwargs"]:
                     continue
 
-                # Check the map for an override for the current parameter name
+                # Apply our manual corrections from PARAMETER_NAME_MAP
                 introspected_name = param.name
                 correct_name = PARAMETER_NAME_MAP.get(task_name, {}).get(introspected_name, introspected_name)
 
                 parameters.append({
-                    "name": param.name,
+                    "name": correct_name,
                     "type": str(param.annotation)if param.annotation is not inspect.Parameter.empty else "any",
                     "default_value": param.default if param.default is not inspect.Parameter.empty else "REQUIRED"
                 })
 
-            # Store all the collected info
+            # Assemble the final data for this task
             task_details[task_name] = {
                 "default_model": model_name,
                 "parameters": parameters

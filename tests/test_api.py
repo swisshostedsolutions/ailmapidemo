@@ -48,8 +48,7 @@ async def test_run_pipeline_endpoint(task_name, inputs):
     
     async with httpx.AsyncClient(timeout=60) as client:
         response = await client.post(f"{API_URL}/run-pipeline/", json=payload)
-        
-        assert response.status_code == 200
+        assert response.status_code == 200, f"API call failed with status {response.status_code}: {response.text}"
         response_data = response.json()
         assert "result" in response_data
         assert response_data["result"] is not None
